@@ -1,0 +1,48 @@
+version: '3.7'
+
+services:
+  web:
+    build: .
+    command: >
+      sh -c " python3 manage.py migrate &&
+              python3 manage.py db_seeder &&
+              python3 manage.py runserver 0.0.0.0:8000"
+    ports:
+      - 8000:8000
+    volumes:
+      - .:/usr/src/app/
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - db
+  db:
+    image: postgres:12.0-alpine
+    volumes:
+      - dm_postgres_data:/usr/src/app/postgresql/
+    env_file:
+      - ./.env.dev.db
+  redis:
+    image: redis:5-alpine
+    volumes:
+      - rd_redis_data:/usr/src/app/redis
+  celery:
+    build: .
+    command: celery -A sitecompany worker -l info
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - web
+      - redis
+  celerybeat:
+    build: .
+    command: celery -A sitecompany beat
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - web
+      - redis
+
+
+volumes:
+  dm_postgres_data:
+  rd_redis_data:
