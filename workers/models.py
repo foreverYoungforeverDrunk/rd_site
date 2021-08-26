@@ -41,8 +41,16 @@ class CompanyStructure(models.Model):
         verbose_name_plural = 'Cтруктура компании'
 
 
+class CustomManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().annotate(
+            get_sum_salary=Sum('paid__paid_out')
+        )
+
+
 class Employees(models.Model):
     """ Сотрудники """
+    objects = CustomManager()
     fullname = models.CharField('ФИО', max_length=150)
     position = models.CharField('Должность', max_length=150)
     employment_date = models.DateField('Дата приема на работу', auto_now=True)
@@ -51,9 +59,12 @@ class Employees(models.Model):
     level = models.ForeignKey(CompanyStructure, on_delete=models.CASCADE, null=True, )
     email = models.EmailField('электроная почта', max_length=150)
 
+    # def get_sum_salary(self):
+    #     sum = self.paid.aggregate(sum_sal=Sum('paid_out'))
+    #     return sum['sum_sal']
+
     def get_sum_salary(self):
-        sum = self.paid.aggregate(sum_sal=Sum('paid_out'))
-        return sum['sum_sal']
+        return self.get_sum_salary
 
     get_sum_salary.short_description = ('Всего выплачено')
 
